@@ -1,5 +1,5 @@
 ---
-title: Analysis of the impact of Land use/Land cover change on Land Surface Temperature
+title: Analysis of the impacts of Land use/Land cover change on Land Surface Temperature
   in Austin, Texas
 author: "Yang Liu"
 subtitle: GE0 511 final project
@@ -10,11 +10,18 @@ subtitle: GE0 511 final project
 
 # Study area
   The study area of this project is the entire region of Travis county, including the whole Austin city.
+```{r, message=F, warning=F, results="hide", echo=F}
+library(mapview)
+library(sf)
+library(dplyr)
+Texas_tract <- st_read("Data/Census_Tract/tl_2019_48_tract.shp")
+Travis_tract <- Texas_tract %>% filter(COUNTYFP == "453")
+mapview(Travis_tract)
+```
 
-# Data and methods
+# Data and Methods
   Three Landsat 7 ETM+ images acquired on July 18, 2000, July 21, 2001 and July 24, 2002 are used to calculate the land surface temperature(LST) of 2001, while other three Landsat 7 ETM+ images acquired on August 29, 2015, July 14, 2016 and August 18, 2017 are used to calculate the LST of 2016. Census tract data of Travis county in 2019 is used to restrict the boundry of study area. Land use/Land cover(LULC) data obtained in 2001 and 2016 are respectively used to extract the detailed LULC classes of 2001 and 2016.
-  You can simply use these following codes to download the required data. (Note: You may be asked to log in your Google account when you run the "drive_download" function. Just follow the instruction and you will get the folder called "Data" in your working directory successfully.)
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide", include=F}
 library(googledrive)
 drive_download(as_id("1ucJeNsCwoXBQErx-myIxYl9NCCNRbOpw"), overwrite = TRUE)
 unzip("Data.zip", list = FALSE, overwrite = TRUE)
@@ -22,19 +29,19 @@ file.remove("Data.zip")
 ```
 
 ## Libraries
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 library(sf)
 library(sp)
 library(raster)
 library(rasterVis)
-library(mapview)
 library(dplyr)
 library(tidyverse)
 library(knitr)
+library(effects)
 ```
 
 ## Import the data
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 # read the raw LULC data
 LULC_2001 <- raster("Data/LULC/NLCD_2001_Land_Cover_L48_20190424_y1KgWNOUQ2kZkgchVNlH.tiff")
 LULC_2016 <- raster("Data/LULC/NLCD_2016_Land_Cover_L48_20190424_y1KgWNOUQ2kZkgchVNlH.tiff")
@@ -68,7 +75,7 @@ B6_17 <- raster("Data/16/2017/B6.tif")
 ```
 
 ## Data preprocessing
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 # Transfrom the CRS of census tract data and LULC data to be same as Landsat image data.
 crs_Landsat <- crs(B3_00, asText = TRUE)
 Travis_tract_crs <- Travis_tract %>% st_transform(crs = crs_Landsat)
@@ -98,7 +105,7 @@ for (band in band_list_16){
 ```
 
 ## Land surface temperature(LST) calculation
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 # Define the calculation function  for Landsat 7 ETM+.
 calc_lst <- function(b3, b4, b6){
   L <- 0.067087*b6 - 0.06709
@@ -123,7 +130,7 @@ lst_2016 <- mean(lst_15, lst_16, lst_17, na.rm = TRUE)
 ```
 
 ## Tidy the LULC data and link it to the LST results.
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 Land_Cover_Type = c(
   'Water' = 11,
   'Water' = 12,
@@ -174,8 +181,7 @@ names(lcds) <- c("LST_2001", "lcID_01", "lcType_01", "LST_2016", "lcID_16", "lcT
 
 # Results
 ## The LST of Austin in 2001 and 2016 are shown below:
-### 2001  
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 gplot(lst_2001) +
   geom_raster(aes(fill = value)) +
   scale_fill_gradientn(colors = c("blue", "grey", "red"),
@@ -184,7 +190,6 @@ gplot(lst_2001) +
   theme(legend.position = "right") +
   labs(title = "Land Surface Temperature of Austin in 2001")
 ```
-### 2016
 ```{r, message=F, warning=F}
 gplot(lst_2016) +
   geom_raster(aes(fill = value)) +
@@ -196,7 +201,7 @@ gplot(lst_2016) +
 ```
   
 ## The LST change between 2001 and 2016 is shown below:
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results="hide"}
 lst_diff <- lst_2016 - lst_2001
 gplot(lst_diff) +
   geom_raster(aes(fill = value)) +
@@ -207,13 +212,68 @@ gplot(lst_diff) +
   labs(title = "Land Surface Temperature change of Austin between 2001 and 2016")
 ```
 
+## The impacts of LULC change on LST are shown below:
+### LULC change from others to urban & built-up:
+```{r, message=F, warning=F, results="hide"}
+others_to_urban <- lcds %>% 
+  select(LST_2001, lcType_01, LST_2016, lcType_16) %>% 
+  filter((lcType_01 == "Forest"|lcType_01 == "Water"|lcType_01 == "Wetland") & lcType_16 == "Urban & built-up") %>% 
+  mutate(lcType_01 = "Others")
+
+others_to_urban_01 <- select(others_to_urban, 1:2)
+names(others_to_urban_01) <- c("LST", "LULC")
+others_to_urban_16 <- select(forest_to_urban, 3:4)
+names(others_to_urban_16) <- c("LST", "LULC")
+
+others_to_urban_tidy <- rbind(others_to_urban_01, others_to_urban_16)
+others_to_urban_tidy$LULC <- relevel(as.factor(others_to_urban_tidy$LULC), ref = 1)
+model_urban <- lm(LST ~ LULC, data = others_to_urban_tidy)
+plot(Effect("LULC", model_urban))
+```
+### LULC change from others to forest:
+```{r, message=F, warning=F, results="hide"}
+others_to_forest <- lcds %>% 
+  select(LST_2001, lcType_01, LST_2016, lcType_16) %>% 
+  filter(lcType_01 != "Forest" & lcType_16 == "Forest") %>% 
+  mutate(lcType_01 = "Others")
+  
+others_to_forest_01 <- select(others_to_forest, 1:2)
+names(others_to_forest_01) <- c("LST", "LULC")
+others_to_forest_16 <- select(others_to_forest, 3:4)
+names(others_to_forest_16) <- c("LST", "LULC")
+
+others_to_forest_tidy <- rbind(others_to_forest_01, others_to_forest_16)
+others_to_forest_tidy$LULC <- relevel(as.factor(others_to_forest_tidy$LULC), ref = 2)
+model_forest <- lm(LST ~ LULC, data = others_to_forest_tidy)
+plot(Effect("LULC", model_forest))
+```
+### LULC change from others to wetland:
+```{r, message=F, warning=F, results="hide"}
+others_to_wetland <- lcds %>% 
+  select(LST_2001, lcType_01, LST_2016, lcType_16) %>% 
+  filter(lcType_01 != "Wetland" & lcType_16 == "Wetland") %>% 
+  mutate(lcType_01 = "Others")
+
+others_to_wetland_01 <- select(others_to_wetland, 1:2)
+names(others_to_wetland_01) <- c("LST", "LULC")
+others_to_wetland_16 <- select(others_to_wetland, 3:4)
+names(others_to_wetland_16) <- c("LST", "LULC")
+
+others_to_wetland_tidy <- rbind(others_to_wetland_01, others_to_wetland_16)
+others_to_wetland_tidy$LULC <- relevel(as.factor(others_to_wetland_tidy$LULC), ref = 1)
+model_wetland <- lm(LST ~ LULC, data = others_to_wetland_tidy)
+plot(Effect("LULC", model_wetland))
+```
+
 # Conclusions
-
-
 
 # References
 [1]Alberti M, Marzluff J. Ecological resilience in urban ecosystems: linking urban patterns to ecological and human function. Urban Ecosyst2004;7:241-265
-[2]Ackerman B.Temporal march of the Chicago heat island. Journal of Climate Applied Meteorology1985;24:547-554.
+
+[2]Ackerman B.Temporal march of the Chicago heat island. Journal of Climate Applied Meteorology1985;24:547-554
+
 [3]Artis D.A., Carnahan W.H. Survey of emissivity variability in thermography of urban areas. Remote Sensing of Environment1982;12:313-329
+
 [4]Sobrino J.A.,Raissouni N., Li Z.L.A comparative study of land surface emissivity retrieval from NOAA data. Remote Sensing of Environment2001;75:256-266
+
 [5]Valor E. and Caselles V.Mapping land surface emissivity from NDVI: Application to European, African, and South American areas. Remote Sensing of Environment1996;57:167-184
