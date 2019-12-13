@@ -21,7 +21,8 @@ mapview(Travis_tract)
 
 # Data and Methods
   Three Landsat 7 ETM+ images acquired on July 18, 2000, July 21, 2001 and July 24, 2002 are used to calculate the land surface temperature(LST) of 2001, while other three Landsat 7 ETM+ images acquired on August 29, 2015, July 14, 2016 and August 18, 2017 are used to calculate the LST of 2016. Census tract data of Travis county in 2019 is used to restrict the boundry of study area. Land use/Land cover(LULC) data obtained in 2001 and 2016 are respectively used to extract the detailed LULC classes of 2001 and 2016.
-```{r, message=F, warning=F, results="hide", include=F}
+  All the data used for this project could be directly downloaded by the following codes:
+```{r, message=F, warning=F, results="hide"}
 library(googledrive)
 drive_download(as_id("1ucJeNsCwoXBQErx-myIxYl9NCCNRbOpw"), overwrite = TRUE)
 unzip("Data.zip", list = FALSE, overwrite = TRUE)
@@ -269,7 +270,7 @@ plot(Effect("LULC", model_wetland))
 ```
 
 # Conclusions
-  From 2001 to 2016, land surface temperatures fell in more areas of Austin, with only a few areas rising. The change of land use/land cover from others to urban & built-up will lead to an increase in land surface temperature, while transition to forest and wetland will cause a decrease in land surface temperature. 
+  From 2001 to 2016, land surface temperatures fell in more areas of Austin, with only a few areas rising. The change of land use/land cover from others to urban & built-up will lead to an increase in land surface temperature, while transition to forest and wetland will cause a decrease in land surface temperature. While developing the city, we must also pay attention to the reasonable mix of land use types and protect forests and wetlands. This can effectively alleviate the heat island effect.
 
 # References
 [1]Alberti M, Marzluff J. Ecological resilience in urban ecosystems: linking urban patterns to ecological and human function. Urban Ecosyst2004;7:241-265
