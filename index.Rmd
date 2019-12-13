@@ -231,6 +231,7 @@ others_to_urban_tidy$LULC <- relevel(as.factor(others_to_urban_tidy$LULC), ref =
 model_urban <- lm(LST ~ LULC, data = others_to_urban_tidy)
 plot(Effect("LULC", model_urban))
 ```
+
 ### LULC change from others to forest:
 ```{r, message=F, warning=F, results="hide"}
 others_to_forest <- lcds %>% 
@@ -248,6 +249,7 @@ others_to_forest_tidy$LULC <- relevel(as.factor(others_to_forest_tidy$LULC), ref
 model_forest <- lm(LST ~ LULC, data = others_to_forest_tidy)
 plot(Effect("LULC", model_forest))
 ```
+
 ### LULC change from others to wetland:
 ```{r, message=F, warning=F, results="hide"}
 others_to_wetland <- lcds %>% 
@@ -267,6 +269,7 @@ plot(Effect("LULC", model_wetland))
 ```
 
 # Conclusions
+  From 2001 to 2016, land surface temperatures fell in more areas of Austin, with only a few areas rising. The change of land use/land cover from others to urban & built-up will lead to an increase in land surface temperature, while transition to forest and wetland will cause a decrease in land surface temperature. 
 
 # References
 [1]Alberti M, Marzluff J. Ecological resilience in urban ecosystems: linking urban patterns to ecological and human function. Urban Ecosyst2004;7:241-265
